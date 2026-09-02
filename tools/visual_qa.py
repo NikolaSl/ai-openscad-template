@@ -80,7 +80,7 @@ def section_plot(stl: Path, axis: str, out: Path) -> None:
     if section is None:
         ax.text(0.5, 0.5, "No intersection", ha="center", va="center", transform=ax.transAxes)
     else:
-        planar, _ = section.to_planar()
+        planar, _ = section.to_2D()
         for entity in planar.discrete:
             ax.plot(entity[:, 0], entity[:, 1], linewidth=1.3)
     ax.set_aspect("equal", adjustable="box")
