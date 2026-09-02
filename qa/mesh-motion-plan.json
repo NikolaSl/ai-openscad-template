@@ -1,0 +1,21 @@
+{
+  "moving": {
+    "name": "example-arm",
+    "scad": "src/qa/example_moving.scad"
+  },
+  "fixed": [
+    {
+      "name": "example-post",
+      "scad": "src/qa/example_fixed.scad",
+      "minimum_clearance_mm": 5.0
+    }
+  ],
+  "motion": {
+    "type": "rotation",
+    "axis": [0, 0, 1],
+    "origin": [40, 30, 6],
+    "min": -45,
+    "max": 90,
+    "step": 5
+  }
+}

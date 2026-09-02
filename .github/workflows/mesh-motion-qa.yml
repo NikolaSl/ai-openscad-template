@@ -1,0 +1,48 @@
+name: Dense mesh collision QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan:
+        description: "Mesh motion plan JSON"
+        required: true
+        default: "qa/mesh-motion-plan.json"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  collision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install OpenSCAD and FCL runtime
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openscad xvfb
+          python -m pip install --upgrade pip
+          python -m pip install numpy trimesh
+          python -m pip install --only-binary=:all: python-fcl
+          python - <<'PY'
+          import fcl
+          from trimesh.collision import CollisionManager
+          CollisionManager()
+          print("FCL runtime OK")
+          PY
+      - name: Run dense mesh collision/distance sweep
+        env:
+          PLAN: ${{ inputs.plan }}
+        run: python tools/mesh_motion_qa.py --plan "$PLAN"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mesh-motion-qa-${{ github.run_id }}
+          path: build/mesh-motion-qa
+          if-no-files-found: warn
+          retention-days: 30
