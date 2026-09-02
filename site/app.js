@@ -1,4 +1,5 @@
 const modelSelect = document.querySelector('#modelSelect');
+const definesInput = document.querySelector('#definesInput');
 const renderButton = document.querySelector('#renderButton');
 const cancelButton = document.querySelector('#cancelButton');
 const downloadButton = document.querySelector('#downloadButton');
@@ -66,6 +67,37 @@ function startElapsedClock() {
   elapsedTimer = setInterval(tick, 1000);
 }
 
+function parseDefines() {
+  const raw = definesInput?.value?.trim() || '';
+  if (!raw) return [];
+  const items = raw.split(/[;\n]+/).map(item => item.trim()).filter(Boolean);
+  if (items.length > 32) throw new Error('At most 32 OpenSCAD -D overrides are allowed per render.');
+  return items.map(item => {
+    const equals = item.indexOf('=');
+    if (equals <= 0 || equals === item.length - 1) {
+      throw new Error(`Invalid -D override “${item}”; expected NAME=value.`);
+    }
+    const name = item.slice(0, equals).trim();
+    const value = item.slice(equals + 1).trim();
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) {
+      throw new Error(`Invalid OpenSCAD variable name “${name}”.`);
+    }
+    if (value.length > 256) throw new Error(`Override ${name} is too long.`);
+    return `${name}=${value}`;
+  });
+}
+
+function syncUrlState() {
+  if (!manifest) return;
+  const entry = selectedEntry();
+  const url = new URL(window.location.href);
+  if (entry) url.searchParams.set('model', entry.path);
+  const rawDefines = definesInput?.value?.trim() || '';
+  if (rawDefines) url.searchParams.set('defines', rawDefines);
+  else url.searchParams.delete('defines');
+  history.replaceState(null, '', url);
+}
+
 async function sha256Hex(bytes) {
   const digest = await crypto.subtle.digest('SHA-256', bytes);
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
@@ -127,7 +159,8 @@ async function showSelectedSource() {
   progressElapsed.textContent = '0:00';
   if (viewerReady) removeCurrentMesh();
   const dependencyCount = filesForEntry(entry).length;
-  setStatus(`Selected ${entry.path}. Source verified; ${dependencyCount}/${manifest.files.length} SCAD file(s) required. Press Render in browser.`);
+  syncUrlState();
+  setStatus(`Selected ${entry.path}. Source verified; ${dependencyCount}/${manifest.files.length} SCAD file(s) required. Optional -D overrides can inspect alternate parametric/motion poses.`);
 }
 
 async function loadViewerModules() {
@@ -233,6 +266,17 @@ async function renderSelected() {
   const entry = selectedEntry();
   if (!entry) return;
   if (activeWorker) cancelRender('Previous render cancelled before starting a new one.');
+
+  let defines;
+  try {
+    defines = parseDefines();
+  } catch (error) {
+    setStatus(`Parameter override error: ${error.message}`);
+    log(error.message, true);
+    return;
+  }
+  syncUrlState();
+
   renderButton.disabled = true;
   cancelButton.disabled = false;
   downloadButton.disabled = true;
@@ -276,9 +320,12 @@ async function renderSelected() {
         await initViewer();
         displayStl(generatedStl);
         setProgress({ phase: 'done', progress: 100, detail: `Completed in ${formatElapsed(elapsed)}.` });
-        setStatus(`Rendered ${entry.path} from exact deployed source in ${formatElapsed(elapsed)}.`);
+        const suffix = defines.length ? ` with ${defines.length} -D override(s)` : '';
+        setStatus(`Rendered ${entry.path}${suffix} from exact deployed source in ${formatElapsed(elapsed)}.`);
       } catch (error) {
-        finishWithError(error);
+        log(`3D display failed: ${error?.stack || error}`, true);
+        setProgress({ phase: 'failed', progress: 0, detail: `STL generated, but 3D display failed: ${error?.message || error}` });
+        setStatus(`STL generated successfully, but 3D display failed: ${error?.message || error}`);
       }
     }
   };
@@ -286,7 +333,8 @@ async function renderSelected() {
   try {
     const files = filesForEntry(entry);
     log(`Source closure: ${files.length}/${manifest.files.length} repository SCAD files.`);
-    worker.postMessage({ type: 'render', jobId, entryPath: entry.path, files, commit: manifest.commit });
+    if (defines.length) log(`OpenSCAD overrides: ${defines.join('; ')}`);
+    worker.postMessage({ type: 'render', jobId, entryPath: entry.path, files, defines, commit: manifest.commit });
   } catch (error) { finishWithError(error); }
 }
 function downloadStl() {
@@ -306,7 +354,16 @@ async function init() {
     option.textContent = entry.label || entry.path;
     modelSelect.appendChild(option);
   }
+
+  const query = new URLSearchParams(window.location.search);
+  const requestedModel = query.get('model');
+  if (requestedModel && manifest.entries.some(entry => entry.path === requestedModel)) {
+    modelSelect.value = requestedModel;
+  }
+  if (definesInput) definesInput.value = query.get('defines') || '';
+
   modelSelect.addEventListener('change', () => showSelectedSource().catch(e => { log(e.stack || e, true); setStatus(`Source load failed: ${e.message}`); }));
+  definesInput?.addEventListener('change', syncUrlState);
   renderButton.addEventListener('click', renderSelected);
   cancelButton.addEventListener('click', () => cancelRender());
   downloadButton.addEventListener('click', downloadStl);
