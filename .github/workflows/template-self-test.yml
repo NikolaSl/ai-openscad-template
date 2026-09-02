@@ -1,0 +1,81 @@
+name: Template environment self-test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "tools/**"
+      - "qa/**"
+      - "requirements-qa.txt"
+      - "requirements-motion-qa.txt"
+      - "VISUAL_QA_PROTOCOL.md"
+      - "MOTION_QA_PROTOCOL.md"
+      - ".github/workflows/template-self-test.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: template-self-test
+  cancel-in-progress: true
+
+jobs:
+  demo-environment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Detect template demonstration
+        id: demo
+        run: |
+          if [ -f src/parts/example_part.scad ] && \
+             [ -f src/assemblies/example_mechanism.scad ] && \
+             [ -f qa/motion-plan.json ] && \
+             [ -f qa/mesh-motion-plan.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "Template demonstration has been removed/replaced; generic demo self-test is skipped."
+          fi
+
+      - name: Install OpenSCAD and QA runtime
+        if: steps.demo.outputs.present == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openscad xvfb
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-qa.txt
+          python -m pip install --only-binary=:all: python-fcl
+          python - <<'PY'
+          import fcl
+          from trimesh.collision import CollisionManager
+          CollisionManager()
+          print("OpenSCAD/Python/FCL template QA runtime ready")
+          PY
+
+      - name: Visual and geometric QA demonstration
+        if: steps.demo.outputs.present == 'true'
+        run: python tools/visual_qa.py src/parts/example_part.scad
+
+      - name: Parameter/compile motion sweep demonstration
+        if: steps.demo.outputs.present == 'true'
+        run: python tools/motion_sweep.py --plan qa/motion-plan.json
+
+      - name: Dense mesh collision/distance demonstration
+        if: steps.demo.outputs.present == 'true'
+        run: python tools/mesh_motion_qa.py --plan qa/mesh-motion-plan.json
+
+      - name: Upload self-test evidence
+        if: always() && steps.demo.outputs.present == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: template-self-test-${{ github.sha }}
+          path: build/
+          if-no-files-found: warn
+          retention-days: 14
