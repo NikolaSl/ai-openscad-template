@@ -101,10 +101,14 @@ jobs:
           test -s site/vendor/openscad/openscad.js
           test -s site/vendor/openscad/openscad.wasm
           test -s site/scad-manifest.json
-          test -f site/repo-src/parts/example_part.scad
+          test -d site/repo-src
           node --check site/app.js
           node --check site/openscad-worker.js
-          python3 -m py_compile tools/build_browser_manifest.py tools/visual_qa.py tools/motion_sweep.py
+          python3 -m py_compile \
+            tools/build_browser_manifest.py \
+            tools/visual_qa.py \
+            tools/motion_sweep.py \
+            tools/mesh_motion_qa.py
           ! grep -R -n -E "from[[:space:]]+['\"]three['\"]" site/vendor/three/addons
           python3 - <<'PY'
           import json
@@ -128,10 +132,11 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      # Pages must be enabled once in repository Settings → Pages → GitHub Actions.
+      # A workflow GITHUB_TOKEN is intentionally not assumed to have repository-admin
+      # permission to create the Pages site for a newly derived template repository.
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
