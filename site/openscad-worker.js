@@ -64,10 +64,27 @@ async function render(job) {
   await mountSources(instance, job.files);
   const input = `/workspace/src/${job.entryPath}`, output = '/output.stl';
   try { instance.FS.unlink(output); } catch { /* none */ }
-  send('phase', { phase: 'render', progress: null, detail: `Rendering ${job.entryPath} with Manifold…` });
+
+  const defineArgs = [];
+  for (const define of (job.defines || [])) {
+    if (typeof define !== 'string' || define.length > 320) throw new Error('Invalid OpenSCAD -D override payload');
+    defineArgs.push('-D', define);
+  }
+
+  const detail = defineArgs.length
+    ? `Rendering ${job.entryPath} with Manifold and ${defineArgs.length / 2} -D override(s)…`
+    : `Rendering ${job.entryPath} with Manifold…`;
+  send('phase', { phase: 'render', progress: null, detail });
+
   let exitCode;
   try {
-    exitCode = instance.callMain([input, '-o', output, '--backend=manifold', '--export-format=binstl']);
+    exitCode = instance.callMain([
+      input,
+      ...defineArgs,
+      '-o', output,
+      '--backend=manifold',
+      '--export-format=binstl'
+    ]);
   } catch (error) {
     if (typeof error === 'number' && typeof instance.formatException === 'function') error = instance.formatException(error);
     throw new Error(`OpenSCAD invocation failed: ${error}`);
