@@ -1,0 +1,135 @@
+name: Deploy OpenSCAD browser validator
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "site/**"
+      - "tools/build_browser_manifest.py"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Vendor modern OpenSCAD WebAssembly and Three.js
+        run: |
+          npm install --ignore-scripts --no-save --no-package-lock three@0.180.0
+
+          mkdir -p site/vendor/openscad
+          mkdir -p site/vendor/three/addons/controls
+          mkdir -p site/vendor/three/addons/loaders
+
+          curl -fL --retry 3 \
+            "https://files.openscad.org/playground/OpenSCAD-2025.03.25.wasm24456-WebAssembly-web.zip" \
+            -o /tmp/openscad-wasm.zip
+          rm -rf /tmp/openscad-wasm && mkdir -p /tmp/openscad-wasm
+          unzip -q /tmp/openscad-wasm.zip -d /tmp/openscad-wasm
+          OPENSCAD_JS="$(find /tmp/openscad-wasm -type f -name openscad.js -print -quit)"
+          OPENSCAD_WASM="$(find /tmp/openscad-wasm -type f -name openscad.wasm -print -quit)"
+          test -n "$OPENSCAD_JS" && test -n "$OPENSCAD_WASM"
+          cp "$OPENSCAD_JS" site/vendor/openscad/openscad.js
+          cp "$OPENSCAD_WASM" site/vendor/openscad/openscad.wasm
+
+          cp node_modules/three/build/three.module.js site/vendor/three/three.module.js
+          cp node_modules/three/build/three.core.js site/vendor/three/three.core.js
+          cp node_modules/three/examples/jsm/controls/OrbitControls.js site/vendor/three/addons/controls/OrbitControls.js
+          cp node_modules/three/examples/jsm/loaders/STLLoader.js site/vendor/three/addons/loaders/STLLoader.js
+
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          for filename in (
+              "site/vendor/three/addons/controls/OrbitControls.js",
+              "site/vendor/three/addons/loaders/STLLoader.js",
+          ):
+              path = Path(filename)
+              text = path.read_text(encoding="utf-8")
+              text = re.sub(r"from\s+(['\"])three\1", "from '../../three.module.js'", text)
+              path.write_text(text, encoding="utf-8")
+              if re.search(r"from\s+['\"]three['\"]", text):
+                  raise SystemExit(f"bare Three.js import remains in {filename}")
+          PY
+
+      - name: Snapshot exact source and build dependency manifest
+        env:
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          rm -rf site/repo-src site/prebuilt
+          cp -R src site/repo-src
+          touch site/.nojekyll
+          python3 tools/build_browser_manifest.py --repository "$REPOSITORY" --commit "$COMMIT_SHA"
+
+      - name: Version browser assets and validate
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("site/scad-manifest.json").read_text())
+          commit = data["commit"]
+          path = Path("site/app.js")
+          app = path.read_text(encoding="utf-8")
+          for asset in (
+              "./vendor/three/three.module.js",
+              "./vendor/three/addons/controls/OrbitControls.js",
+              "./vendor/three/addons/loaders/STLLoader.js",
+          ):
+              app = app.replace(f"'{asset}'", f"'{asset}?v={commit}'")
+          path.write_text(app, encoding="utf-8")
+          PY
+
+          test -s site/vendor/openscad/openscad.js
+          test -s site/vendor/openscad/openscad.wasm
+          test -s site/scad-manifest.json
+          test -f site/repo-src/parts/example_part.scad
+          node --check site/app.js
+          node --check site/openscad-worker.js
+          python3 -m py_compile tools/build_browser_manifest.py tools/visual_qa.py tools/motion_sweep.py
+          ! grep -R -n -E "from[[:space:]]+['\"]three['\"]" site/vendor/three/addons
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          data = json.loads(Path("site/scad-manifest.json").read_text())
+          assert data["files"] and data["entries"]
+          assert data["renderer"]["worker"] is True
+          assert not any("prebuilt" in e for e in data["entries"])
+          print(f"site manifest OK: {len(data['files'])} files, {len(data['entries'])} entries")
+          PY
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

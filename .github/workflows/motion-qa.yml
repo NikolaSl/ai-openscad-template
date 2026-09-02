@@ -1,0 +1,34 @@
+name: Motion sweep QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      plan:
+        description: "Motion plan JSON"
+        required: true
+        default: "qa/motion-plan.json"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  motion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install OpenSCAD and Xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openscad xvfb
+      - name: Run configured motion sweep
+        env:
+          PLAN: ${{ inputs.plan }}
+        run: python tools/motion_sweep.py --plan "$PLAN"
+      - name: Upload motion QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: motion-qa-${{ github.run_id }}
+          path: build/motion-qa
+          if-no-files-found: warn
