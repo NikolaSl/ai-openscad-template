@@ -1,0 +1,20 @@
+{
+  "entrypoint": "src/assemblies/example_mechanism.scad",
+  "axes": [
+    {
+      "name": "DEMO_ANGLE",
+      "min": -45,
+      "max": 90,
+      "step": 15,
+      "reference": 0
+    }
+  ],
+  "coupled_samples": [],
+  "review_samples": [
+    {"DEMO_ANGLE": -45},
+    {"DEMO_ANGLE": 0},
+    {"DEMO_ANGLE": 45},
+    {"DEMO_ANGLE": 90}
+  ],
+  "camera": "220,-220,170,0,0,0"
+}
