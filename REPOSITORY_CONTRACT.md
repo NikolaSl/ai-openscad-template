@@ -17,7 +17,7 @@ The repository must preserve, as applicable:
 - current partial/full assembly;
 - visual/geometric/motion QA procedures and accepted checkpoints;
 - unresolved assumptions and HOLD/VERIFY items;
-- design decisions that affect downstream geometry;
+- durable design decisions and rationale;
 - live printable-part list and non-printed BOM;
 - physical calibration/fit state;
 - exact assembly order and service constraints;
@@ -25,21 +25,23 @@ The repository must preserve, as applicable:
 
 ## Fresh-session bootstrap
 
-Read, in order:
+An AI/coding agent should start with `AGENTS.md`, then read the engineering sources below. A human session may start directly with this contract.
 
-1. `REPOSITORY_CONTRACT.md`
-2. `DESIGN_PROTOCOL.md`
-3. `VISUAL_QA_PROTOCOL.md`
-4. `MOTION_QA_PROTOCOL.md`
-5. `BROWSER_REVIEW_PROTOCOL.md`
-6. `PROJECT_STATE.md`
-7. `REQUIREMENTS.md`
-8. `PARTS.md`
-9. `INTERFACES.md`
-10. `ASSEMBLY.md`
-11. `CALIBRATION.md`
-12. `src/config.scad`
-13. relevant QA reports, assemblies and neighboring part sources.
+1. `AGENTS.md` — concise operational instructions for agents.
+2. `REPOSITORY_CONTRACT.md`
+3. `DESIGN_PROTOCOL.md`
+4. `VISUAL_QA_PROTOCOL.md`
+5. `MOTION_QA_PROTOCOL.md`
+6. `BROWSER_REVIEW_PROTOCOL.md`
+7. `PROJECT_STATE.md`
+8. `REQUIREMENTS.md`
+9. `DECISIONS.md`
+10. `PARTS.md`
+11. `INTERFACES.md`
+12. `ASSEMBLY.md`
+13. `CALIBRATION.md`
+14. `src/config.scad`
+15. relevant QA plans/results, current assemblies and neighboring part sources.
 
 Do not infer current state from old chat snippets when the repository can answer it.
 
@@ -56,12 +58,17 @@ part source
 + motion QA when motion envelope is affected
 + PARTS/INTERFACES update
 + ASSEMBLY/BOM update
++ DECISIONS update when durable rationale matters
 + PROJECT_STATE/HOLD update
 + browser reviewability
 = accepted design step
 ```
 
 If any required item is missing, the part remains provisional.
+
+## Decision-memory rule
+
+Use `DECISIONS.md` for accepted/provisional/superseded choices whose rationale would matter in a future fresh session. It is not a replacement for Git history, numerical parameters or interface contracts. Keep old superseded decisions with a pointer to the replacement rather than erasing the reasoning.
 
 ## Browser/mobile integration
 
@@ -104,5 +111,5 @@ A mechanical design step is complete only when another session can:
 5. inspect it in the browser without freezing the page;
 6. identify required non-printed items;
 7. physically integrate it using `ASSEMBLY.md`;
-8. know remaining HOLD/VERIFY items;
+8. know remaining HOLD/VERIFY items and durable decisions;
 9. continue the next dependency without recovering chat history.
