@@ -28,7 +28,57 @@ Named poses are human-review checkpoints, not a substitute for an automated/repe
 
 Initial engineering steps such as 2–5° rotational or 0.5–2 mm linear may be useful starting points, but they are not universal acceptance limits.
 
-## 4. Check every sampled state
+## 4. Three levels of automated motion QA
+
+Use the strongest level applicable to the mechanism. They complement one another.
+
+### Level A — parameter/compile/assertion sweep
+
+`tools/motion_sweep.py` drives OpenSCAD parameters through configured axis ranges, explicit coupled samples and representative review poses.
+
+It verifies that:
+
+- every configured pose compiles;
+- executable OpenSCAD `assert()` invariants remain true;
+- endpoints and coupled checkpoints are exercised;
+- representative PNG evidence can be regenerated.
+
+This is the generic baseline for every moving project.
+
+### Level B — dense rigid-mesh collision and distance sweep
+
+`tools/mesh_motion_qa.py` exports a reference-pose moving collision body and fixed obstruction meshes once, then uses `trimesh` + `python-fcl` to transform the moving body through a dense sweep without repeatedly invoking CAD booleans.
+
+The supplied generic engine supports one rigid rotational or translational DOF with:
+
+- arbitrary axis;
+- arbitrary rotation origin;
+- minimum/maximum/step;
+- multiple fixed obstruction meshes;
+- exact collision queries;
+- minimum-distance queries;
+- per-obstruction required minimum clearance;
+- machine-readable result for every sampled state.
+
+Use `qa/mesh-motion-plan.json` as the template plan.
+
+### Level C — project-specific kinematics / swept-volume proof
+
+Complex linkages, coupled multi-axis transforms, cable chains, changing-shape mechanisms or special symmetry arguments may need a project-specific adapter layered on top of the generic tools.
+
+Examples include:
+
+- multiple moving meshes with different transforms;
+- configuration-space collision grids;
+- analytic rotational symmetry proofs;
+- conservative lower/upper collision envelopes;
+- adaptive refinement around a detected clearance boundary;
+- explicit cable/hose models;
+- swept-volume construction.
+
+Project-specific logic belongs in the derived project, while the generic methodology and reusable primitives belong in this template.
+
+## 5. Check every sampled state
 
 Where applicable verify:
 
@@ -49,21 +99,21 @@ Where applicable verify:
 
 Encode critical invariants as executable `assert()` checks where practical.
 
-## 5. Swept volume
+## 6. Swept volume
 
 When possible, supplement sampling with swept-volume/envelope reasoning. No non-contact fixed object may intrude into the swept volume after required safety clearance. This is particularly useful for rotating arms, payloads, counterweights, linkages, folding structures and cable carriers.
 
-## 6. Multiple DOFs
+## 7. Multiple DOFs
 
 Testing axes independently is insufficient. Check configuration-space corners, each axis at limits while others are critical/reference, normal coupled trajectories, known worst combinations and singular/near-singular configurations. Periodic axes must include full revolution and wrap transition.
 
-If exhaustive Cartesian sampling is too expensive, use justified adaptive/critical sampling and document what is not exhaustive.
+If exhaustive Cartesian sampling is too expensive, use justified adaptive/critical sampling, collision envelopes and symmetry/swept-volume reasoning, and document what is not exhaustive.
 
-## 7. Visual evidence
+## 8. Visual evidence
 
 Retain/regenerate both limits, reference, representative intermediates, closest-clearance poses, any refined failure boundary, and cutaway/section views when motion is hidden.
 
-## 8. Pass criteria
+## 9. Pass criteria
 
 Mark `MOTION_QA_PASS` only when:
 
@@ -71,19 +121,20 @@ Mark `MOTION_QA_PASS` only when:
 2. both limits are checked;
 3. the full range is swept with justified resolution;
 4. critical multi-axis combinations are checked;
-5. no unintended collision is found;
+5. no unintended collision is found at the required QA level;
 6. required clearances remain valid;
 7. flexible elements remain valid if present;
 8. hard stops/overtravel are understood where relevant;
 9. interfaces remain coherent throughout motion;
-10. procedure/evidence is reproducible from repository-controlled source/tools.
+10. procedure/evidence is reproducible from repository-controlled source/tools;
+11. limitations of the chosen automated proof are explicitly documented.
 
-## 9. Failure/backtracking
+## 10. Failure/backtracking
 
 Record failing motion ID/configuration, identify the interface/parameter owner, backtrack to the nearest resolvable upstream decision, mark affected dependencies `NEEDS_REVALIDATION`, revise, re-run per-part QA, then repeat the **complete affected motion sweep**, not only the previously failing pose.
 
-## 10. Invalidation
+## 11. Invalidation
 
 Any change to moving shape, axis, limit, neighboring clearance, payload envelope, cable path or support relationship invalidates the relevant motion checkpoint.
 
-The generic `tools/motion_sweep.py` supplied by this template automates parameter sweeps, coupled compile checks, assertion execution and representative renders. Project-specific collision/distance adapters should be added when geometry requires stronger proof than OpenSCAD assertions/pose compilation.
+For a simple rigid DOF, the template's Level A + Level B tooling can provide a strong reusable baseline. For complex mechanisms, add a Level C adapter rather than weakening the motion contract to fit the generic tool.
