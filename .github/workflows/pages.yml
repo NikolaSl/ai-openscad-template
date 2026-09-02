@@ -9,6 +9,7 @@ on:
       - "tools/build_browser_manifest.py"
       - "tools/browser_smoke_test.mjs"
       - "*.md"
+      - "docs/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
