@@ -4,7 +4,7 @@ This document records the accepted validation state of the reusable `ai-openscad
 
 ## Status
 
-**PASS — reusable methodology, local/CI QA backbone and GitHub Pages mobile review environment are operational.**
+**PASS — reusable methodology, CI QA backbone and GitHub Pages mobile review environment are operational.**
 
 ## GitHub Pages / browser publication
 
@@ -25,9 +25,33 @@ The Pages build validates and publishes:
 - Manifold browser rendering in a background Web Worker;
 - Three.js interactive STL viewing;
 - responsive phase/elapsed-time/Cancel controls;
-- direct links to the persistent project/methodology documents.
+- optional bounded `-D` review overrides;
+- direct links to persistent project/methodology documents.
 
 The browser path is source-derived and does not rely on CI-prebuilt STL previews.
+
+## Real browser WebAssembly smoke test
+
+The Pages build now starts the generated site under a local HTTP server and opens it with real headless Chrome through `puppeteer-core` **before deployment**. `tools/browser_smoke_test.mjs` exercises the actual UI + Web Worker + downloaded OpenSCAD WASM path rather than only syntax-checking JavaScript.
+
+Accepted smoke result:
+
+```text
+Browser WASM render PASS:
+parts/example_part.scad
+80.0 × 60.0 × 6.0 mm
+1,968 triangles
+browser WASM
+
+Browser -D override PASS:
+assemblies/example_mechanism.scad
+DEMO_ANGLE=45
+rendered from exact deployed source
+```
+
+Therefore a Pages deployment is blocked if the browser cannot initialize the worker/runtime, verify/mount the source closure, compile an actual model, parse/display the generated STL, or pass the demonstration `-D` parameter override through to OpenSCAD.
+
+For derived projects that remove the demonstration assembly, the smoke test still chooses a normal `parts/` entry (or the first available renderable entry) for a real WASM render. The demo-specific `-D` check is conditional.
 
 ## Template environment self-test
 
@@ -99,7 +123,8 @@ A repository created from this template starts with working infrastructure for:
 - project-specific Level-C motion adapters when needed;
 - live assembly/BOM/calibration records;
 - durable decision logging;
-- mobile browser rendering from exact source.
+- mobile browser rendering from exact source;
+- CI smoke testing of the real browser WebAssembly render path.
 
 ## What this checkpoint does not prove
 
