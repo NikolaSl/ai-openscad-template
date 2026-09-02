@@ -7,6 +7,7 @@ on:
       - "src/**"
       - "site/**"
       - "tools/build_browser_manifest.py"
+      - "tools/browser_smoke_test.mjs"
       - "*.md"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
@@ -32,9 +33,11 @@ jobs:
         with:
           node-version: "22"
 
-      - name: Vendor modern OpenSCAD WebAssembly and Three.js
+      - name: Vendor modern OpenSCAD WebAssembly and browser runtime
         run: |
-          npm install --ignore-scripts --no-save --no-package-lock three@0.180.0
+          npm install --ignore-scripts --no-save --no-package-lock \
+            three@0.180.0 \
+            puppeteer-core@24.16.0
 
           mkdir -p site/vendor/openscad
           mkdir -p site/vendor/three/addons/controls
@@ -105,6 +108,7 @@ jobs:
           test -d site/repo-src
           node --check site/app.js
           node --check site/openscad-worker.js
+          node --check tools/browser_smoke_test.mjs
           python3 -m py_compile \
             tools/build_browser_manifest.py \
             tools/visual_qa.py \
@@ -120,6 +124,19 @@ jobs:
           assert not any("prebuilt" in e for e in data["entries"])
           print(f"site manifest OK: {len(data['files'])} files, {len(data['entries'])} entries")
           PY
+
+      - name: Smoke-test real browser WebAssembly render
+        run: |
+          CHROME_PATH="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$CHROME_PATH"
+          python3 -m http.server 8000 --directory site >/tmp/cad-site.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:8000/scad-manifest.json >/dev/null; then break; fi
+            sleep 1
+          done
+          CHROME_PATH="$CHROME_PATH" node tools/browser_smoke_test.mjs http://127.0.0.1:8000/
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
