@@ -9,6 +9,8 @@ exact deployed repository source
         ↓
 recursive dependency closure
         ↓
+optional review-only OpenSCAD -D overrides
+        ↓
 OpenSCAD WebAssembly Web Worker
         ↓
 binary STL
@@ -42,11 +44,32 @@ Typical phases: starting → runtime → source verification → CAD render → 
 
 Adding unrelated CAD files must not make every render slower. At publication time statically resolve recursive `include`/`use` dependencies for each entry point and mount only that closure. If dynamic/external includes cannot be safely resolved, fall back to the full source snapshot for that entry rather than silently omitting files.
 
-## 5. Renderer/toolchain
+## 5. Mobile parameter/motion inspection
+
+The review page may expose optional OpenSCAD `-D NAME=value` overrides so a phone/tablet can inspect alternate parameter values and mechanism poses without editing repository source.
+
+Example:
+
+```text
+ALT_ANGLE=45; AZ_ANGLE=120
+```
+
+Rules:
+
+- overrides are passed as OpenSCAD arguments directly to the WebAssembly worker, never through a shell;
+- variable names are syntactically validated and the number/size of overrides is bounded;
+- the selected entry point and override string may be preserved in the page URL so a review pose can be bookmarked/shared;
+- the exact repository source and commit remain visible alongside the derived render;
+- an override is **review state, not an accepted design change**;
+- if an experimental value becomes an engineering decision, update the owning source/shared parameter/interface, run the required invalidation/QA chain, and commit it to the repository.
+
+This makes the browser suitable not only for static inspection but also for parameterized motion and design discussions from a phone.
+
+## 6. Renderer/toolchain
 
 Pin the WebAssembly CAD build explicitly. For OpenSCAD, use a modern build and Manifold backend where supported. Toolchain changes are engineering changes and require validation.
 
-## 6. Source integrity
+## 7. Source integrity
 
 - snapshot source from the checked-out deployment commit;
 - store SHA-256 for every source file;
@@ -56,13 +79,14 @@ Pin the WebAssembly CAD build explicitly. For OpenSCAD, use a modern build and M
 
 Displayed STL is derived data, not a second source of truth.
 
-## 7. Worker lifecycle
+## 8. Worker lifecycle
 
 ```text
 user requests render
 → create fresh worker
 → initialize runtime
 → verify/mount dependency closure
+→ apply review-only -D overrides, if any
 → render
 → transfer binary STL
 → terminate worker
@@ -70,11 +94,11 @@ user requests render
 
 Cancel, selection change, navigation, crash or error terminates the worker. Do not accumulate orphan CAD jobs.
 
-## 8. Prebuilt preview exception
+## 9. Prebuilt preview exception
 
 Do not maintain prebuilt previews by default. Introduce one only after measured evidence that an important entry remains impractically slow despite worker execution, modern WASM, Manifold, dependency closure and binary STL. Document the reason and retain browser source rendering as the reproducible path.
 
-## 9. Mobile acceptance gate
+## 10. Mobile acceptance gate
 
 A browser review implementation passes only if:
 
@@ -85,4 +109,5 @@ A browser review implementation passes only if:
 - source/docs remain usable;
 - unrelated files do not join every render;
 - full assembly can be regenerated from exact source;
+- useful parametric/motion poses can be inspected with bounded review-only overrides when the project exposes suitable parameters;
 - duplicate CI render infrastructure is absent unless justified by measurement.
