@@ -12,6 +12,7 @@ This template extracts the project-independent workflow and tooling proven while
 - visual/geometric QA for every elementary part;
 - context and assembly QA after every accepted part;
 - full-range motion QA for mechanisms;
+- dense mesh collision/minimum-clearance sweeps for rigid DOFs;
 - controlled recursive backtracking and invalidation;
 - live BOM and assembly guide;
 - physical calibration/fit feedback;
@@ -20,6 +21,15 @@ This template extracts the project-independent workflow and tooling proven while
 - dependency-aware source mounting so unrelated files do not slow each render.
 
 The repository, not the chat history, is the persistent source of engineering context.
+
+## One-time GitHub setup
+
+GitHub repository settings are intentionally outside the template files themselves. For this repository, and for a newly created repository derived from it, check these once in the GitHub UI:
+
+1. **Template source repository:** `Settings → General → Template repository` — enable this on `ai-openscad-template` so future projects can be created with **Use this template**.
+2. **Each concrete project:** `Settings → Pages → Build and deployment → Source → GitHub Actions` — enable Pages so `.github/workflows/pages.yml` can publish the browser validator.
+
+The workflow can build the complete Pages artifact itself, but a normal workflow `GITHUB_TOKEN` should not be assumed to have repository-administration permission to create/enable the Pages site.
 
 ## New-project bootstrap
 
@@ -99,14 +109,17 @@ src/
   assemblies/
   envelopes/
   calibration/
+  qa/
 
 tools/
   build_browser_manifest.py
   visual_qa.py
   motion_sweep.py
+  mesh_motion_qa.py
 
 qa/
   motion-plan.json
+  mesh-motion-plan.json
 
 site/
   index.html
@@ -118,6 +131,7 @@ site/
   pages.yml
   visual-qa.yml
   motion-qa.yml
+  mesh-motion-qa.yml
 ```
 
 Generated QA artifacts belong under `build/` and are normally ignored. CAD source, parameters, interface contracts, procedures and accepted engineering decisions remain version controlled.
@@ -126,24 +140,37 @@ Generated QA artifacts belong under `build/` and are normally ignored. CAD sourc
 
 GitHub Pages is built by `.github/workflows/pages.yml`. The deployment pins a modern OpenSCAD WebAssembly build and Three.js. The browser manifest is generated from the exact commit and contains SHA-256 hashes plus recursive dependency closures for renderable SCAD entry points.
 
-The template contains a minimal example part and mechanism so the environment works immediately. Replace/remove them when the real project decomposition and parameter architecture are ready.
+The template contains a minimal example part and mechanism so the environment works immediately. Replace/remove them when the real project decomposition and parameter architecture are ready. The Pages workflow itself is template-safe and does not require those example filenames to remain.
 
-## Local QA prerequisites
+## QA layers
 
-For full local visual QA install:
-
-- OpenSCAD;
-- Xvfb (`xvfb-run`) on headless Linux;
-- Python 3;
-- packages from `requirements-qa.txt`.
-
-Example:
+### Visual/geometric part QA
 
 ```bash
 python3 -m pip install -r requirements-qa.txt
 python3 tools/visual_qa.py src/parts/example_part.scad
+```
+
+Produces full mesh checks, seven standard views, center X/Y/Z sections, contact sheet and `qa.json`.
+
+### Generic motion compile/assertion sweep
+
+```bash
 python3 tools/motion_sweep.py --plan qa/motion-plan.json
 ```
+
+Drives OpenSCAD motion parameters across configured ranges, coupled samples and human-review poses.
+
+### Dense mesh collision/distance sweep
+
+```bash
+python3 -m pip install -r requirements-motion-qa.txt
+python3 tools/mesh_motion_qa.py --plan qa/mesh-motion-plan.json
+```
+
+Exports the moving/fixed collision bodies once and uses `trimesh` + `python-fcl` for dense collision and minimum-distance checks across a rigid rotational or translational DOF. Complex multi-axis/linkage mechanisms can add project-specific transform/collision adapters while keeping the same protocol.
+
+For full local QA install OpenSCAD and Xvfb (`xvfb-run`) in addition to Python 3.
 
 ## Template policy
 
