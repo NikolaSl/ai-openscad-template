@@ -12,7 +12,9 @@ button:hover, .button-link:hover, .repo-link:hover { background: #202b42; }
 button:disabled { opacity: 0.45; cursor: default; }
 .toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #273044; }
 .toolbar label { display: grid; gap: 5px; min-width: min(100%, 300px); color: #9ca3af; font-size: 0.82rem; }
-select { min-height: 42px; padding: 0 10px; border: 1px solid #3b4964; border-radius: 9px; background: #111827; color: #e5e7eb; font: inherit; }
+.toolbar .defines-label { min-width: min(100%, 360px); flex: 1 1 360px; }
+select, input { min-height: 42px; padding: 0 10px; border: 1px solid #3b4964; border-radius: 9px; background: #111827; color: #e5e7eb; font: inherit; }
+input::placeholder { color: #64748b; }
 .status { padding: 9px 18px; min-height: 39px; border-bottom: 1px solid #273044; background: #0f172a; color: #cbd5e1; font-size: 0.9rem; }
 .render-progress { padding: 12px 18px; border-bottom: 1px solid #273044; background: #111827; }
 .progress-head { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
