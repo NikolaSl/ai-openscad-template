@@ -19,6 +19,7 @@
   <section class="toolbar" aria-label="Project documentation">
     <a class="button-link" data-repo-file="PROJECT_STATE.md" href="#" target="_blank" rel="noreferrer">Current project state</a>
     <a class="button-link" data-repo-file="REQUIREMENTS.md" href="#" target="_blank" rel="noreferrer">Requirements</a>
+    <a class="button-link" data-repo-file="DECISIONS.md" href="#" target="_blank" rel="noreferrer">Decisions</a>
     <a class="button-link" data-repo-file="PARTS.md" href="#" target="_blank" rel="noreferrer">Parts + status</a>
     <a class="button-link" data-repo-file="INTERFACES.md" href="#" target="_blank" rel="noreferrer">Interfaces + motion</a>
     <a class="button-link" data-repo-file="ASSEMBLY.md" href="#" target="_blank" rel="noreferrer">Assembly + live BOM</a>
@@ -35,6 +36,11 @@
     <label>
       SCAD entry point
       <select id="modelSelect"></select>
+    </label>
+    <label class="defines-label">
+      OpenSCAD -D overrides (optional)
+      <input id="definesInput" type="text" autocomplete="off" spellcheck="false"
+             placeholder="DEMO_ANGLE=45; CLEARANCE=0.6" />
     </label>
     <button id="renderButton" type="button">Render in browser</button>
     <button id="cancelButton" type="button" disabled>Cancel render</button>
@@ -78,7 +84,7 @@
   </details>
 
   <footer>
-    Rendering is performed locally from the exact deployed repository source in a background Web Worker. The repository remains the source of truth; the displayed STL is derived review data.
+    Rendering is performed locally from the exact deployed repository source in a background Web Worker. Optional -D overrides let a phone inspect parametric/motion poses without editing source. The repository remains the source of truth; the displayed STL is derived review data.
   </footer>
 
   <script>
