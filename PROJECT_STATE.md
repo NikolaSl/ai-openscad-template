@@ -6,7 +6,7 @@ This is the short resume index for the **template repository itself**. A concret
 
 **Reusable parametric-CAD template infrastructure validated and ready for derived projects.**
 
-The template now contains the complete repository-first methodology, browser/mobile review environment, visual/geometric QA tools, generic motion sweep tooling, dense rigid-body collision/distance QA, live assembly/BOM/calibration scaffolding and fresh-session agent instructions.
+The template contains repository-first continuity, browser/mobile review, visual/geometric QA, solid-body relationship and constraint/DOF methodology, generic motion sweep tooling, dense rigid-body collision/distance QA, live assembly/BOM/calibration scaffolding and fresh-session agent instructions.
 
 Accepted infrastructure validation is recorded in:
 
@@ -35,16 +35,18 @@ They are **not** a planned real machine.
 - Exact source snapshot + SHA-256 manifest: **PASS**.
 - Recursive SCAD dependency-closure loading: **PASS**.
 - Background OpenSCAD WebAssembly + Manifold rendering: integrated and published.
+- Real headless-Chrome browser WASM smoke render + `-D` override path: **PASS**.
 - Mobile review-only `-D NAME=value` parameter/motion overrides: integrated; accepted values still require repository commits.
 - Visual/geometric demonstration QA: **PASS**.
 - Example part: `Simple: yes`, watertight volume, one component, `80 × 60 × 6 mm`, seven standard views + X/Y/Z sections.
 - Generic OpenSCAD motion compile/assertion sweep: **PASS**, 10 compile samples + 4 representative renders, zero failures.
 - Dense `trimesh` + `python-fcl` rigid-motion collision/distance demonstration: **PASS**, zero failures.
-- End-to-end template self-test workflow: **PASS**.
+- Mechanical-integrity protocol now requires explicit solid-body relations, constraint/DOF chains, retention and load paths for derived projects.
+- End-to-end template self-test workflow: **PASS** for the demonstration fixtures.
 
 ## Persistent methodology / bootstrap
 
-A fresh AI session should begin with `AGENTS.md`, then follow the ordering in `REPOSITORY_CONTRACT.md`.
+A fresh AI session begins with `AGENTS.md`, then follows `REPOSITORY_CONTRACT.md`.
 
 Important persistent files:
 
@@ -52,6 +54,7 @@ Important persistent files:
 AGENTS.md
 REPOSITORY_CONTRACT.md
 DESIGN_PROTOCOL.md
+MECHANICAL_INTEGRITY_PROTOCOL.md
 VISUAL_QA_PROTOCOL.md
 MOTION_QA_PROTOCOL.md
 BROWSER_REVIEW_PROTOCOL.md
@@ -70,31 +73,35 @@ src/config.scad
 A new project begins at planning, not at the template's demonstration geometry. Its first engineering sequence is:
 
 ```text
-requirements
+requirements + load cases
 → complete elementary part decomposition
-→ interface + motion contracts
+→ interface + solid-relationship graph
+→ constraint/DOF + support/load-path register
+→ operational + adjustment state contracts
 → shared parameter architecture
 → dependency order
 → human planning review gate
 → first elementary part
-→ full visual/geometric/context QA
+→ visual/geometric/context/solid-pair/constraint QA
 → assembly integration
-→ motion QA where applicable
+→ complete affected state-space motion QA
 → live BOM/state update
-→ physical calibration when required
+→ physical calibration/load verification when required
 ```
 
-Until requirements/decomposition/interfaces exist, detailed real-machine geometry should not be generated.
+Until requirements/decomposition/interfaces/constraints exist, detailed real-machine geometry should not be generated.
 
 ## HOLD / VERIFY placeholders for a derived project
 
 Replace these with project-specific items:
 
-- `HOLD-PROJECT-REQUIREMENTS` — define the actual machine constraints.
+- `HOLD-PROJECT-REQUIREMENTS` — define the actual machine constraints and load cases.
 - `HOLD-PART-DECOMPOSITION` — replace template example rows with the complete initial elementary-part plan.
-- `HOLD-INTERFACE-ARCHITECTURE` — define real interface and motion contracts.
-- `HOLD-SHARED-PARAMETERS` — replace `EXAMPLE_*` with the real parameter families/datums.
+- `HOLD-INTERFACE-ARCHITECTURE` — define real interface and solid-body relationship contracts.
+- `HOLD-CONSTRAINT-ARCHITECTURE` — define how each intended motion is physically constrained and retained.
+- `HOLD-SHARED-PARAMETERS` — replace `EXAMPLE_*` with real parameter families/datums.
 - `VERIFY-PHYSICAL-FITS` — identify real hardware/printer-dependent interfaces requiring measurement/coupons.
+- `VERIFY-LOAD-PATHS` — identify support/strength/stiffness assumptions that require analysis or physical load tests.
 
 ## Repository administration
 
