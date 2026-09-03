@@ -2,7 +2,7 @@
 
 A part owns its local geometry; this file owns the **contract at boundaries between parts**, the physical relationship between relevant solid bodies, and the constraint architecture that turns desired CAD trajectories into real mechanism DOFs.
 
-Use stable interface (`I-*`), constraint (`K-*`) and motion/state (`M-*`) IDs so changes can invalidate the correct downstream scope.
+Use stable interface (`I-*`), relation (`R-*`), constraint (`K-*`) and motion/state (`M-*`) IDs so changes can invalidate the correct downstream scope.
 
 ## Contract rules
 
@@ -13,7 +13,8 @@ Use stable interface (`I-*`), constraint (`K-*`) and motion/state (`M-*`) IDs so
 5. CAD validation does not imply physical fit/strength validation.
 6. If no explicit relationship permits overlap/contact, physical solids default to `FORBIDDEN_OVERLAP`.
 7. Bodies sharing the same motion transform still require internal interference checks.
-8. A motion contract is incomplete until the physical constraint chain that removes unwanted DOFs is defined.
+8. A claimed autonomous/repeatable motion DOF is incomplete until the physical constraint chain that removes unwanted DOFs is defined.
+9. A human, jig, gravity/friction or fixture used during setup is an **external constraint** and must be recorded rather than counted as mechanism geometry.
 
 ## Interface register
 
@@ -50,19 +51,21 @@ An intentional contact is an explicit exception, not a reason to omit the body f
 
 A free rigid body has six rigid-body DOFs. For every installed major body/subassembly, account for how real physical features remove the unwanted DOFs.
 
-| Constraint ID | Body / subassembly | Intended DOF | Physical constraint chain | Retention / end limits | Load / reaction path | Status |
-|---|---|---|---|---|---|---|
-| `K-EXAMPLE` | demo arm | 1 rotation | demo pivot/shaft | demo endpoints | demo support | template-only |
+| Constraint ID | Body / subassembly | Claimed mechanism DOF | Physical constraint chain | Retention / end limits | External/operator constraints | Load / reaction path | Status |
+|---|---|---|---|---|---|---|---|
+| `K-EXAMPLE` | demo arm | 1 rotation | demo pivot/shaft | demo endpoints | none | demo support | template-only |
 
 The real project should describe bearings, shafts, guides, rails, slots, hinges, locators, fasteners, anti-rotation features, axial retention and support spacing explicitly. A `rotate()`/`translate()` in an assembly file is not itself a constraint.
 
+If a manual setup retains extra DOFs, do not force the register to say `1 DOF`. Instead record the coordinate actually constrained by the mechanism plus the residual motion and operator/fixture role. Example: a screw center constrained by a slot can have one translational coordinate while the payload on that screw still has yaw during loose manual adjustment.
+
 ## Motion / adjustment / configuration contracts
 
-| Motion ID | State class | Moving assembly/body | Reference/fixed assembly | Range/checkpoints | Physical constraint ID | Collision-sensitive relations | Status |
-|---|---|---|---|---|---|---|---|
-| `M-EXAMPLE` | operational | demo arm | demo base | `-45°..90°` | `K-EXAMPLE` | `R-EXAMPLE` | template-only |
+| Motion ID | State class | Moving body / modeled coordinate | Reference/fixed assembly | Range/checkpoints | Physical constraint ID | Residual/external constraints | Collision-sensitive relations | Status |
+|---|---|---|---|---|---|---|---|---|
+| `M-EXAMPLE` | operational | demo arm | demo base | `-45°..90°` | `K-EXAMPLE` | none | `R-EXAMPLE` | template-only |
 
-Use motion IDs not only for motors but also for balancing slots, telescopic adjustments, movable clamps and other continuous/discrete states that affect geometry.
+Use motion IDs not only for motors but also for balancing slots, telescopic adjustments, movable clamps and other continuous/discrete states that affect geometry. For manual setup, name the constrained coordinate if the complete body is not self-guided.
 
 ## Parameter-to-contract invalidation map
 
