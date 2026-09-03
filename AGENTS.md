@@ -8,28 +8,32 @@ Read in this order before engineering work:
 
 1. `REPOSITORY_CONTRACT.md`
 2. `DESIGN_PROTOCOL.md`
-3. `VISUAL_QA_PROTOCOL.md`
-4. `MOTION_QA_PROTOCOL.md`
-5. `BROWSER_REVIEW_PROTOCOL.md`
-6. `PROJECT_STATE.md`
-7. `REQUIREMENTS.md`
-8. `DECISIONS.md`
-9. `PARTS.md`
-10. `INTERFACES.md`
-11. `ASSEMBLY.md`
-12. `CALIBRATION.md`
-13. `src/config.scad`
-14. relevant QA plans/results and the current assembly/neighbor sources.
+3. `MECHANICAL_INTEGRITY_PROTOCOL.md`
+4. `VISUAL_QA_PROTOCOL.md`
+5. `MOTION_QA_PROTOCOL.md`
+6. `BROWSER_REVIEW_PROTOCOL.md`
+7. `PROJECT_STATE.md`
+8. `REQUIREMENTS.md`
+9. `DECISIONS.md`
+10. `PARTS.md`
+11. `INTERFACES.md`
+12. `ASSEMBLY.md`
+13. `CALIBRATION.md`
+14. `src/config.scad`
+15. relevant QA plans/results and the current assembly/neighbor sources.
 
 ## Engineering behavior
 
 - Preserve the global machine plan while solving one elementary part at a time.
-- Do not begin detailed geometry before requirements, decomposition, interfaces and shared parameters are sufficiently defined.
-- Use stable part/interface/motion IDs in reasoning and commit messages where practical.
-- Treat already accepted interfaces as contracts. If one must change, explicitly invalidate affected downstream geometry and re-run QA in dependency order.
+- Do not begin detailed geometry before requirements, decomposition, interfaces, constraint/DOF architecture and shared parameters are sufficiently defined.
+- Use stable part/interface/motion/constraint IDs in reasoning and commit messages where practical.
+- Treat already accepted interfaces and constraint chains as contracts. If one must change, explicitly invalidate affected downstream geometry and re-run QA in dependency order.
 - Never force a downstream part around a bad upstream decision when controlled backtracking is cleaner.
 - Unknown physical dimensions are `HOLD-*` / `VERIFY-*` items, not invitations to invent precision.
 - Do not mark a part DONE merely because OpenSCAD compiles.
+- A CAD transform is not a physical mechanism: every intended trajectory must be enforced by bearings, shafts, guides, slots, hinges, rails, linkages, flexures or equivalent real constraints.
+- Every installed rigid body must have its unintended degrees of freedom physically constrained and an understandable load/reaction path.
+- Default solid-body rule: if an explicit interface does not permit contact/fit/embedding/passage, physical solids must not intersect.
 
 ## Part acceptance transaction
 
@@ -40,9 +44,11 @@ source + shared parameters
 → individual geometric/visual QA
 → sections through critical internal geometry
 → neighboring/context QA
+→ physical solid-pair relationship checks
+→ support / constraint / load-path review
 → current assembly integration
-→ motion QA if the motion envelope changed
-→ PARTS / INTERFACES update
+→ motion + adjustment state-space QA if affected
+→ PARTS / INTERFACES / constraint register update
 → ASSEMBLY + live BOM update
 → DECISIONS / PROJECT_STATE / HOLD update
 → browser reviewability
@@ -51,9 +57,11 @@ source + shared parameters
 ## QA rules
 
 - Printable elementary parts: full mesh QA plus ISO, top, bottom, front, back, left, right and X/Y/Z center sections; add critical offset/detail sections when needed.
-- Assemblies: inspect all touched interfaces and assembly/tool-access sequence.
-- Moving mechanisms: never accept from named screenshots alone. Follow `MOTION_QA_PROTOCOL.md`, including endpoints, a complete justified sweep and coupled configurations where relevant.
-- Physical fit, stiffness, torque, backlash and material behavior remain physical gates even after CAD QA passes.
+- Assemblies: inspect all touched interfaces, fastener envelopes, support paths, assembly/tool-access sequence and forbidden solid-pair relations.
+- Do not hide internal collisions by unioning all bodies in one moving collision mesh. Bodies that share the same operational transform can still collide internally.
+- Moving/adjustable mechanisms: follow `MOTION_QA_PROTOCOL.md` across operational DOFs, adjustment DOFs and relevant discrete/service states, including endpoints and coupled states.
+- For every intended DOF, verify which physical constraints remove the other rigid-body DOFs; underconstraint and impossible overconstraint are both failures.
+- Physical fit, stiffness, torque, backlash, preload and material behavior remain physical gates even after CAD QA passes.
 
 ## Repository continuity
 
@@ -67,4 +75,4 @@ Every useful part and subsystem/full assembly must remain reviewable from the Gi
 
 ## Human review
 
-Stop for explicit human inspection at major subsystem gates, before expensive prints, after major backtracking and before changing a validated high-fanout interface. Present a compact state: what changed, what QA passed, what remains provisional and the proposed next step.
+Stop for explicit human inspection at major subsystem gates, before expensive prints, after major backtracking and before changing a validated high-fanout interface/constraint. Present a compact state: what changed, what QA passed, what remains provisional and the proposed next step.
