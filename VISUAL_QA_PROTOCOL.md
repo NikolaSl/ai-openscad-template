@@ -1,6 +1,6 @@
 # Visual and Geometric QA Protocol
 
-Every elementary mechanical part must be inspected from enough independent evidence that a wrong model cannot easily look correct from one attractive angle.
+Every elementary mechanical part must be inspected from enough independent evidence that a wrong model cannot easily look correct from one attractive angle. Use this together with `MECHANICAL_INTEGRITY_PROTOCOL.md` and `MOTION_QA_PROTOCOL.md`.
 
 ## 1. Full geometry gate for printable parts
 
@@ -31,59 +31,90 @@ right
 
 Use consistent orientation and auto-fit so unexpected inversion/mirroring is visible.
 
-## 3. Mandatory center sections
+## 3. Mandatory center and critical sections
 
-Where meaningful, generate center sections normal to:
+Where meaningful, generate center sections normal to X/Y/Z. Add offset/critical sections through bearing seats, nut traps, screw channels, shaft bores, gear planes, clips, thin walls, supports, fastener stacks and hidden interfaces.
 
-```text
-X
-Y
-Z
-```
+If a collision/clearance is hidden, generate a section through the actual body pair; do not rely only on translucent or attractive external views.
 
-Add offset/critical sections through bearing seats, nut traps, screw channels, shaft bores, gear planes, clips, thin walls and hidden interfaces. Center cuts are the minimum, not the maximum.
+## 4. Neighbor/context QA must include physical hardware
 
-## 4. Neighbor/context QA
+Render the new part with every directly interacting validated neighbor **and every purchased/fabricated solid envelope that can interfere**, such as shafts, bearings, screw heads/shanks, nuts, washers, inserts, motors, payload adapters and connectors.
 
-Render the new part together with every already validated directly interacting neighbor. Check:
+Check:
 
-- collisions and unintended gaps;
+- forbidden solid overlap and required clearance;
+- intended contact/fit/passage relationships;
 - common-axis/hole alignment;
 - shaft/bearing engagement;
 - gear/belt/chain plane alignment;
 - fastener head/nut/washer paths;
-- screw length and insertion direction;
+- screw length/thread engagement and insertion direction;
+- anti-rotation/retention features;
 - tool reach;
 - assembly sequence feasibility;
 - removal/service path;
 - minimum material around holes/pockets;
-- intended contact surfaces;
 - cables/flexible paths when relevant.
 
-## 5. Assembly QA
+A hole center alone is not a complete fastener model when the head, nut, washer or protruding shank can collide.
 
-After part acceptance, integrate into the current partial/full machine and inspect the new boundary in assembled context. Large assemblies do not need to be boolean-unioned merely for review; individual printable parts remain responsible for full mesh QA.
+## 5. Support / constraint / load-path visual review
 
-## 6. Moving geometry
+Visual QA must also make the real mechanical constraint chain inspectable. For every major installed body/subassembly ask:
 
-If a part/assembly moves, static views are insufficient. Follow `MOTION_QA_PROTOCOL.md`. Check both endpoints, the full intended range, critical clearances and coupled-axis states.
+- what supports radial, axial and gravity loads?
+- what reacts drive torque?
+- what prevents unintended translations/rotations?
+- what retains the body at end limits?
+- are support locations sufficiently separated for the intended moment load?
+- does a service cover accidentally carry a structural reaction?
+- are motor/gear shafts or thin printed walls carrying load unintentionally?
+- can realistic manufacturing tolerances make redundant constraints fight each other?
 
-## 7. Evidence and reproducibility
+Use cutaways/sections/exploded context views when supports or retainers are hidden.
 
-QA tooling should generate:
+A CAD transform is not visual evidence of a real mechanism. The bearings, shafts, rails, guides, slots, pivots, locators and retention elements enforcing the path must be visible or otherwise documented in `INTERFACES.md`.
+
+## 6. Assembly QA and internal solid pairs
+
+After part acceptance, integrate into the current partial/full machine and inspect every newly touched boundary.
+
+Do **not** assume bodies are mutually clear merely because they share one assembly transform. Internal same-transform pairs still require solid-pair QA. Intentional contact/fit pairs are explicit exceptions; otherwise physical overlap is forbidden.
+
+Large assemblies need not be boolean-unioned merely for review; individual parts remain responsible for full mesh QA while pairwise/interface/state-space tools handle physical interaction proof.
+
+## 7. Moving and adjustable geometry
+
+Static views are insufficient when geometry changes with state. Follow `MOTION_QA_PROTOCOL.md` over:
+
+```text
+operational DOFs
+× adjustment coordinates/DOFs
+× relevant discrete configurations
+× relevant service/setup states
+```
+
+Check endpoints, complete justified sweeps, coupled states, closest-clearance states and internal body pairs. If a manual setup has residual free DOFs, state the operator/fixture constraint and do not depict the CAD parameter as a self-guided mechanism.
+
+## 8. Evidence and reproducibility
+
+QA tooling should generate as applicable:
 
 - exported STL in full mode;
 - standard PNG views;
-- X/Y/Z section images;
+- X/Y/Z and critical section images;
 - contact sheet;
 - machine-readable `qa.json`;
-- relevant logs.
+- pairwise collision/distance evidence;
+- relevant logs;
+- critical state/constraint review poses.
 
-Generated artifacts may remain under `build/` and need not be committed. The scripts/commands required to regenerate them **must** be committed.
+Generated artifacts may remain under `build/` and need not be committed. The source, contracts and scripts/commands required to regenerate them **must** be committed.
 
-## 8. Failure/backtracking
+## 9. Failure/backtracking
 
-If QA exposes a local modeling error, revise the part and repeat. If it exposes an upstream interface problem, use the controlled backtracking/invalidation rules in `DESIGN_PROTOCOL.md` and `INTERFACES.md`.
+If QA exposes a local modeling error, revise the part and repeat. If it exposes an upstream interface, support, constraint, solid-relation or motion-state problem, use controlled backtracking/invalidation and repeat the complete affected QA scope.
 
 ## Template tool
 
@@ -93,4 +124,4 @@ Run:
 python3 tools/visual_qa.py src/parts/example_part.scad
 ```
 
-Use `--preview-only` for large assemblies whose individual printable parts already passed full QA.
+Use `--preview-only` for large assemblies whose individual printable parts already passed full QA; preview-only is not permission to skip interface/solid/constraint/state-space checks.
