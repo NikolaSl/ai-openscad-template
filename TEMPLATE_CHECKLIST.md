@@ -22,11 +22,15 @@ For every repository created from the template:
 
 ## Planning before geometry
 
-- [ ] Fill `REQUIREMENTS.md`.
+- [ ] Fill `REQUIREMENTS.md` including load cases, operational motion and adjustment ranges.
 - [ ] Create the complete initial elementary-part list in `PARTS.md`.
 - [ ] Assign stable part IDs.
 - [ ] Define all known neighboring interfaces in `INTERFACES.md`.
-- [ ] Define each motion DOF and range before detailed moving geometry.
+- [ ] Classify relevant physical solid-body relationships (`FORBIDDEN_OVERLAP`, `CLEARANCE`, intended contacts/fits/passages, etc.).
+- [ ] Define every operational and adjustment DOF/state before detailed moving geometry.
+- [ ] Create the constraint/DOF register: explain which real bearings/shafts/guides/slots/hinges/rails/fasteners remove unwanted rigid-body DOFs.
+- [ ] Define retention/end stops and anti-rotation/anti-translation features.
+- [ ] Record major load/reaction paths and support spacing.
 - [ ] Establish shared parameter families/datums in `src/config.scad`.
 - [ ] Establish dependency/build order.
 - [ ] Mark unknown real-hardware dimensions as HOLD/VERIFY rather than inventing precision.
@@ -37,7 +41,7 @@ For every repository created from the template:
 - [ ] Replace/remove `src/assemblies/example_mechanism.scad` when the first real assembly exists.
 - [ ] Replace/remove the example collision bodies under `src/qa/` when real motion QA geometry exists.
 - [ ] Replace `qa/motion-plan.json` with the real compile/assertion motion plan, or explicitly mark it not applicable.
-- [ ] Replace `qa/mesh-motion-plan.json` with the real rigid-body collision plan when applicable, or document why project-specific collision tooling is required.
+- [ ] Replace `qa/mesh-motion-plan.json` with real solid-pair/motion collision plans where applicable, or document why project-specific Level C collision tooling is required.
 - [ ] Update default workflow-dispatch input paths if the example filenames are removed.
 
 ## First accepted part
@@ -45,19 +49,26 @@ For every repository created from the template:
 - [ ] Full geometric QA.
 - [ ] ISO + six orthographic views.
 - [ ] X/Y/Z center sections plus critical offset sections where required.
-- [ ] Neighbor/context QA.
+- [ ] Neighbor/context QA with realistic hardware envelopes where relevant.
+- [ ] Classify/check every newly relevant solid-body pair.
+- [ ] Verify support, retention, intended DOFs and load path.
+- [ ] Verify fastener head/nut/washer envelopes, insertion direction and tool access.
 - [ ] Integrate into current assembly.
-- [ ] Update `PARTS.md`, `INTERFACES.md`, `ASSEMBLY.md`, BOM and `PROJECT_STATE.md`.
+- [ ] Update `PARTS.md`, `INTERFACES.md`, constraint register, `ASSEMBLY.md`, BOM and `PROJECT_STATE.md`.
 - [ ] Verify browser rendering from phone/tablet.
 
-## Moving mechanism gate
+## Moving / adjustable mechanism gate
 
-- [ ] Motion contract exists in `INTERFACES.md`.
-- [ ] Both endpoints are explicitly checked.
-- [ ] `tools/motion_sweep.py` covers the full configured range and representative/coupled poses.
+- [ ] Motion/adjustment contract exists in `INTERFACES.md`.
+- [ ] Physical constraint ID/chain exists for every intended DOF.
+- [ ] Both endpoints of every continuous state variable are explicitly checked.
+- [ ] `tools/motion_sweep.py` covers complete configured ranges and representative/coupled poses.
 - [ ] `tools/mesh_motion_qa.py` is used for rigid-body collision/minimum-distance QA where applicable.
-- [ ] Complex/coupled mechanisms have a project-specific Level C adapter or documented proof strategy where the generic tool is insufficient.
-- [ ] Any motion-envelope geometry change invalidates and repeats the complete affected sweep.
+- [ ] Internal same-transform solid pairs are checked rather than hidden inside a union mesh.
+- [ ] Operational × adjustment coupled states are covered where geometry can interact.
+- [ ] Complex/coupled mechanisms have a project-specific Level C adapter or documented conservative proof strategy where the generic tool is insufficient.
+- [ ] Constraint coherence (bearing/guide capture, axial retention, end stops) remains valid throughout the state space.
+- [ ] Any motion/state-envelope or support-chain geometry change invalidates and repeats the complete affected sweep.
 
 ## Before production printing
 
@@ -65,5 +76,6 @@ For every repository created from the template:
 - [ ] Printer/material fit coupons completed where needed.
 - [ ] Physical results recorded in `CALIBRATION.md`.
 - [ ] Affected shared parameters updated through invalidation procedure.
-- [ ] Affected part/assembly/motion QA repeated.
+- [ ] Affected part/assembly/solid-pair/motion QA repeated.
+- [ ] Physical support/load path and retention verified under realistic load where CAD cannot prove stiffness/strength.
 - [ ] BOM/fastener lengths frozen only after dry-fit.
