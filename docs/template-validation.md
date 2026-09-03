@@ -6,6 +6,8 @@ This document records the accepted validation state of the reusable `ai-openscad
 
 **PASS — reusable methodology, CI QA backbone and GitHub Pages mobile review environment are operational.**
 
+The methodology now explicitly includes `MECHANICAL_INTEGRITY_PROTOCOL.md`: relevant physical solid pairs must be classified, forbidden overlap must be excluded throughout allowed state space, and intended CAD trajectories must have real physical support/constraint chains that remove unintended rigid-body degrees of freedom.
+
 ## GitHub Pages / browser publication
 
 GitHub Pages is enabled and the browser validator has completed successful build + deploy runs.
@@ -32,7 +34,7 @@ The browser path is source-derived and does not rely on CI-prebuilt STL previews
 
 ## Real browser WebAssembly smoke test
 
-The Pages build now starts the generated site under a local HTTP server and opens it with real headless Chrome through `puppeteer-core` **before deployment**. `tools/browser_smoke_test.mjs` exercises the actual UI + Web Worker + downloaded OpenSCAD WASM path rather than only syntax-checking JavaScript.
+The Pages build starts the generated site under a local HTTP server and opens it with real headless Chrome through `puppeteer-core` **before deployment**. `tools/browser_smoke_test.mjs` exercises the actual UI + Web Worker + downloaded OpenSCAD WASM path rather than only syntax-checking JavaScript.
 
 Accepted smoke result:
 
@@ -49,13 +51,13 @@ DEMO_ANGLE=45
 rendered from exact deployed source
 ```
 
-Therefore a Pages deployment is blocked if the browser cannot initialize the worker/runtime, verify/mount the source closure, compile an actual model, parse/display the generated STL, or pass the demonstration `-D` parameter override through to OpenSCAD.
+A Pages deployment is therefore blocked if the browser cannot initialize the worker/runtime, verify/mount the source closure, compile an actual model, parse/display the generated STL, or pass the demonstration `-D` parameter override through to OpenSCAD.
 
-For derived projects that remove the demonstration assembly, the smoke test still chooses a normal `parts/` entry (or the first available renderable entry) for a real WASM render. The demo-specific `-D` check is conditional.
+For derived projects that remove the demonstration assembly, the smoke test still chooses a normal `parts/` entry (or first available renderable entry) for a real WASM render. The demo-specific `-D` check is conditional.
 
 ## Template environment self-test
 
-The template demonstration self-test completed successfully after dependency/tooling fixes.
+The template demonstration self-test completed successfully.
 
 Validated steps:
 
@@ -69,8 +71,6 @@ Validated steps:
 
 ### Visual/geometric demonstration result
 
-For the example part:
-
 ```text
 Simple: yes
 watertight: true
@@ -80,8 +80,6 @@ bounds: 80 × 60 × 6 mm
 views: ISO, top, bottom, front, back, right, left
 sections: X, Y, Z
 ```
-
-The QA tooling also produces `qa.json` and a contact sheet.
 
 ### Generic motion sweep demonstration
 
@@ -100,7 +98,24 @@ fixed-obstruction checks: 1
 failures: 0
 ```
 
-This confirms that both the lightweight OpenSCAD pose/assertion layer and the reusable `trimesh` + `python-fcl` rigid-body collision layer are executable in CI.
+This confirms that both the lightweight OpenSCAD pose/assertion layer and reusable `trimesh` + `python-fcl` rigid-body collision layer are executable in CI.
+
+## Mechanical-integrity architecture
+
+The template now requires a derived project to maintain, as applicable:
+
+```text
+interface contracts I-*
+solid-body relationship contracts R-*
+constraint / DOF contracts K-*
+motion / adjustment / configuration contracts M-*
+```
+
+The default physical rule is that unclassified solid overlap is forbidden. Intended fits, contacts, fastener passages, embedded hardware and kinematic contacts are explicit exceptions rather than bodies silently omitted from collision reasoning.
+
+A free rigid body begins with six rigid-body DOFs. For every real mechanism, the project must document how bearings, shafts, guides, rails, slots, hinges, linkages, locators, fasteners, retention and end stops physically remove unwanted DOFs and leave the intended motion. Support/load paths and underconstraint/overconstraint are part of the engineering review.
+
+The generic tooling provides reusable Level-A/Level-B building blocks. Arbitrary multi-body mechanisms or operational×adjustment Cartesian state spaces can require a project-specific Level-C adapter; the protocol explicitly requires adding that adapter rather than weakening coverage.
 
 ## Mobile parametric review
 
@@ -114,13 +129,14 @@ A repository created from this template starts with working infrastructure for:
 
 - repository-first continuity across fresh chats;
 - requirements/decomposition/interface/state documents;
+- solid-body relationship and constraint/DOF methodology;
 - shared OpenSCAD parameter architecture;
 - per-part visual/geometric QA;
 - current-assembly integration discipline;
-- full-range motion QA planning;
+- operational + adjustment full-state QA planning;
 - generic pose/assertion sweeps;
 - generic dense rigid-body collision/distance sweeps;
-- project-specific Level-C motion adapters when needed;
+- project-specific Level-C state-space adapters when needed;
 - live assembly/BOM/calibration records;
 - durable decision logging;
 - mobile browser rendering from exact source;
@@ -128,9 +144,11 @@ A repository created from this template starts with working infrastructure for:
 
 ## What this checkpoint does not prove
 
-It does not prove the correctness of a future machine design. Every derived project must still define its own requirements, part/interface graph, numerical parameters, motion contracts, physical calibration, collision models, assembly sequence and acceptance evidence.
+It does **not** prove the correctness, structural adequacy or kinematic constraint completeness of a future machine. Every derived project must define and validate its own requirements, body-pair relationships, constraint/DOF chain, load paths, numerical parameters, operational and adjustment ranges, physical calibration, collision models, fasteners, assembly sequence and acceptance evidence.
 
-It also does not make browser `-D` experiments persistent engineering decisions automatically.
+The demonstration's successful single-DOF collision sweep is proof that the infrastructure runs, not a universal collision proof for mechanisms created later.
+
+Browser `-D` experiments also do not become persistent engineering decisions automatically.
 
 ## Template administration
 
