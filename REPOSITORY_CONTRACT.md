@@ -11,11 +11,13 @@ The repository must preserve, as applicable:
 - requirements and constraints;
 - complete planned part decomposition;
 - interaction/interface contracts;
+- physical solid-body relationship classifications;
+- constraint/DOF register and support/load-path decisions;
 - shared parametric configuration and derived datums;
 - dependency/build order;
 - part and subsystem status;
 - current partial/full assembly;
-- visual/geometric/motion QA procedures and accepted checkpoints;
+- visual/geometric/mechanical-integrity/motion QA procedures and accepted checkpoints;
 - unresolved assumptions and HOLD/VERIFY items;
 - durable design decisions and rationale;
 - live printable-part list and non-printed BOM;
@@ -30,18 +32,19 @@ An AI/coding agent should start with `AGENTS.md`, then read the engineering sour
 1. `AGENTS.md` — concise operational instructions for agents.
 2. `REPOSITORY_CONTRACT.md`
 3. `DESIGN_PROTOCOL.md`
-4. `VISUAL_QA_PROTOCOL.md`
-5. `MOTION_QA_PROTOCOL.md`
-6. `BROWSER_REVIEW_PROTOCOL.md`
-7. `PROJECT_STATE.md`
-8. `REQUIREMENTS.md`
-9. `DECISIONS.md`
-10. `PARTS.md`
-11. `INTERFACES.md`
-12. `ASSEMBLY.md`
-13. `CALIBRATION.md`
-14. `src/config.scad`
-15. relevant QA plans/results, current assemblies and neighboring part sources.
+4. `MECHANICAL_INTEGRITY_PROTOCOL.md`
+5. `VISUAL_QA_PROTOCOL.md`
+6. `MOTION_QA_PROTOCOL.md`
+7. `BROWSER_REVIEW_PROTOCOL.md`
+8. `PROJECT_STATE.md`
+9. `REQUIREMENTS.md`
+10. `DECISIONS.md`
+11. `PARTS.md`
+12. `INTERFACES.md`
+13. `ASSEMBLY.md`
+14. `CALIBRATION.md`
+15. `src/config.scad`
+16. relevant QA plans/results, current assemblies and neighboring part sources.
 
 Do not infer current state from old chat snippets when the repository can answer it.
 
@@ -52,11 +55,14 @@ A new or materially changed part is not DONE merely because a `.scad` file exist
 ```text
 part source
 + shared parameters/interfaces
++ solid-body relationship classification
++ support / constraint / load-path definition
 + per-part geometric/visual QA
-+ neighbor/context QA
++ neighbor/context + fastener-envelope QA
 + current assembly integration
-+ motion QA when motion envelope is affected
-+ PARTS/INTERFACES update
++ mechanical-integrity pairwise checks
++ motion/adjustment state-space QA when affected
++ PARTS/INTERFACES/constraint-register update
 + ASSEMBLY/BOM update
 + DECISIONS update when durable rationale matters
 + PROJECT_STATE/HOLD update
@@ -65,6 +71,14 @@ part source
 ```
 
 If any required item is missing, the part remains provisional.
+
+## Mechanical-integrity invariant
+
+The default physical rule is: **two solid bodies may not occupy the same volume unless an explicit interface contract defines the relationship as an intended fit/contact/passage/embedded/bonded condition.**
+
+Bodies that move together under the same transform still require internal interference checks. Operational motion, adjustment travel and relevant configuration/service states all belong to the QA state space.
+
+A CAD trajectory is not accepted unless the real mechanism contains a physical constraint chain that makes the intended DOF possible while removing unintended rigid-body DOFs. Bearings, shafts, guides, rails, slots, hinges, linkages, flexures, locators, retention and fasteners are part of that proof. See `MECHANICAL_INTEGRITY_PROTOCOL.md`.
 
 ## Decision-memory rule
 
@@ -78,38 +92,39 @@ Every printable part and useful subsystem/full assembly must have a browser-rend
 
 ## Live assembly/BOM rule
 
-`ASSEMBLY.md` is a live design product, not end-of-project documentation. Whenever an accepted part/interface changes, immediately update affected quantities, purchased/fabricated hardware, tools/consumables, fit tests, mating relationships, order of assembly, tool access, motion checks and service constraints.
+`ASSEMBLY.md` is a live design product, not end-of-project documentation. Whenever an accepted part/interface changes, immediately update affected quantities, purchased/fabricated hardware, tools/consumables, fit tests, mating relationships, support/retention roles, order of assembly, tool access, motion checks and service constraints.
 
 The BOM must always answer: **what must be printed, bought, fabricated and prepared to build everything designed so far?**
 
 ## Assembly sequence is a design constraint
 
-A geometrically valid final state is not acceptable if it cannot actually be assembled or serviced. Context QA must consider intermediate assembly states, fastener insertion, bearing installation, tool reach, trapped parts, disassembly path and movement required for service.
+A geometrically valid final state is not acceptable if it cannot actually be assembled or serviced. Context QA must consider intermediate assembly states, fastener insertion, bearing installation, tool reach, trapped parts, disassembly path, temporary loss of supports and movement required for service.
 
 ## Human review gates
 
 Stop for human review at least after:
 
 - initial machine decomposition;
-- shared parameter/interface architecture;
+- shared parameter/interface/constraint architecture;
 - each major subsystem integration;
 - a large recursive backtrack;
-- a change to a validated high-fanout interface;
+- a change to a validated high-fanout interface or support chain;
 - before expensive/long physical prints;
 - before final production assembly.
 
-The review package should expose current assembly, changed part, critical sections, key parameter/interface changes, current state/BOM, unresolved risks and proposed next step.
+The review package should expose current assembly, changed part, critical sections, key parameter/interface/constraint changes, current state/BOM, unresolved risks and proposed next step.
 
 ## Definition of done
 
 A mechanical design step is complete only when another session can:
 
 1. understand why the part exists and what it interfaces with;
-2. regenerate it from source/common parameters;
-3. reproduce relevant QA;
-4. place it in the current assembly;
-5. inspect it in the browser without freezing the page;
-6. identify required non-printed items;
-7. physically integrate it using `ASSEMBLY.md`;
-8. know remaining HOLD/VERIFY items and durable decisions;
-9. continue the next dependency without recovering chat history.
+2. understand how it is supported/retained and what DOFs remain;
+3. regenerate it from source/common parameters;
+4. reproduce relevant solid-pair, geometric and state-space QA;
+5. place it in the current assembly;
+6. inspect it in the browser without freezing the page;
+7. identify required non-printed items and fasteners;
+8. physically integrate it using `ASSEMBLY.md`;
+9. know remaining HOLD/VERIFY items and durable decisions;
+10. continue the next dependency without recovering chat history.
