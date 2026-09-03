@@ -8,9 +8,11 @@ Use this protocol together with `MECHANICAL_INTEGRITY_PROTOCOL.md`. Motion QA co
 
 ## 1. Motion/state contract
 
-For every operational or adjustment DOF record a stable ID, moving body/assembly, fixed/reference bodies, axis/path datum, min/max or discrete states, periodic behavior, normal versus hard limits, minimum clearance, collision-sensitive interfaces, flexible-element constraints, coupling, retention/end-stop behavior, and the **physical constraint chain that enforces the trajectory**.
+For every operational or adjustment state variable record a stable ID, moving body/assembly or precisely the coordinate being varied, fixed/reference bodies, axis/path datum, min/max or discrete states, periodic behavior, normal versus hard limits, minimum clearance, collision-sensitive interfaces, flexible-element constraints, coupling, retention/end-stop behavior, and the **physical constraint chain that enforces every claimed autonomous/repeatable DOF**.
 
-A CAD `translate()` or `rotate()` does not prove a realizable mechanism. Bearings, shafts, hinges, rails, slots, guides, linkages, flexures or other real constraints must account for the unwanted rigid-body DOFs.
+A CAD `translate()` or `rotate()` does not prove a realizable mechanism. Bearings, shafts, hinges, rails, slots, guides, linkages, flexures or other real constraints must account for unwanted rigid-body DOFs.
+
+If a setup state relies on a human, jig, gravity/friction or another external constraint, record that explicitly. A QA parameter may still sweep a coordinate that real geometry constrains, but it must not imply that all other body DOFs are constrained. Example: a screw center can follow a slot while the attached payload still yaws around the screw. If self-guided/repeatable one-dimensional motion is required, add an anti-rotation guide, second locator, carriage/rail or equivalent real constraint.
 
 ## 2. Complete configuration space
 
@@ -18,7 +20,7 @@ The QA state space is not limited to motorized axes:
 
 ```text
 operational DOFs
-× adjustment DOFs
+× adjustment coordinates / DOFs
 × discrete configurations
 × relevant assembly/service states
 ```
@@ -26,6 +28,8 @@ operational DOFs
 Include balancing slots, telescopic settings, movable clamps, focus travel, counterweights, tensioners, alternate adapters, removable guards where they affect support/clearance, and other mechanically relevant states.
 
 Endpoints are mandatory. If exhaustive Cartesian sampling is too expensive, use documented critical combinations, adaptive refinement, conservative envelopes and swept-volume/analytic proofs. Never silently ignore an adjustment because it shares the same operational transform as another body.
+
+For manual setup states with residual free DOFs, model the relevant residual envelope conservatively or state exactly which orientation/position is operator-controlled and what the QA does and does not prove.
 
 ## 3. Mandatory configurations
 
@@ -61,17 +65,18 @@ It verifies compilation, executable `assert()` invariants, endpoints/coupled che
 
 `tools/mesh_motion_qa.py` exports collision bodies once, then uses `trimesh` + `python-fcl` to evaluate dense state sweeps without repeatedly invoking CAD booleans.
 
-Use it for every simple rigid DOF or adjustment that can be represented by a rigid transform. A `moving` body may be checked against any relevant fixed body, including **another body in the same operational subassembly** when testing internal interference.
+Use it for every simple rigid DOF or adjustment coordinate that can be represented by a rigid transform. A `moving` body may be checked against any relevant fixed body, including **another body in the same operational subassembly** when testing internal interference.
 
 ### Level C — project-specific state-space / kinematics proof
 
-Complex linkages, multiple independently moving solids, multi-dimensional adjustment×operation grids, cable chains, changing-shape mechanisms or special symmetry arguments require a project-specific adapter.
+Complex linkages, multiple independently moving solids, multi-dimensional adjustment×operation grids, cable chains, changing-shape mechanisms, residual setup DOFs or special symmetry arguments require a project-specific adapter.
 
 Examples:
 
 - multiple moving meshes with distinct transforms;
 - full operational × adjustment configuration-space grids;
 - pairwise collision classification;
+- residual yaw/orientation envelopes during manual setup;
 - adaptive refinement around clearance boundaries;
 - conservative collision envelopes;
 - swept-volume construction;
@@ -108,17 +113,19 @@ Do not hide internal collisions by unioning all bodies in a moving group. Intent
 
 ## 7. Constraint coherence throughout motion
 
-Collision-free geometry is not enough. Verify that every state remains mechanically constrained as intended:
+Collision-free geometry is not enough. Verify that every claimed operational state remains mechanically constrained as intended:
 
 - bearings stay seated/coaxial;
 - shafts remain radially and axially retained;
-- sliders remain captured by guides/slots/rails;
+- sliders remain captured by their actual guides/slots/rails;
 - pivots remain supported on their intended axes;
-- fasteners/locators prevent unwanted DOFs;
+- fasteners/locators prevent unwanted DOFs only where they physically can;
 - end stops actually bound the documented travel;
 - service/configuration states do not remove required support unexpectedly.
 
-Underconstraint and overconstraint are both failures.
+For manual setup states, verify only the constraints actually provided by the mechanism and explicitly record operator/fixture roles plus residual DOFs. Do not call a manually held adjustment a self-guided DOF.
+
+Underconstraint and overconstraint are both failures when they violate the intended functional contract.
 
 ## 8. Swept volume
 
@@ -128,7 +135,7 @@ When possible, supplement sampling with swept-volume/envelope reasoning. No non-
 
 Testing variables independently is insufficient. Check configuration-space corners, each variable at limits while others are critical/reference, normal coupled trajectories, known worst combinations, singular states and wrap transitions.
 
-For adjustment variables whose geometry can interact with operational motion, test the coupled operational × adjustment space at an appropriate resolution or provide a conservative proof.
+For adjustment variables whose geometry can interact with operational motion, test the coupled operational × adjustment space at an appropriate resolution or provide a conservative proof. If residual setup DOFs can alter interference, include their envelope/state or explicitly restrict the setup procedure.
 
 ## 10. Visual evidence
 
@@ -139,18 +146,19 @@ Retain/regenerate both limits, reference, representative intermediates, adjustme
 Mark `MOTION_QA_PASS` only when:
 
 1. operational and adjustment/configuration contracts are defined;
-2. physical constraint chains are defined;
-3. all endpoints are checked;
-4. complete affected ranges are swept with justified resolution;
-5. critical coupled combinations are checked;
-6. no forbidden solid intersection exists at the chosen proof level;
-7. required clearances remain valid;
-8. internal same-transform body pairs were not omitted;
-9. flexible elements remain valid if present;
-10. hard stops/retention are understood;
-11. support/guide coherence remains valid throughout motion;
-12. proof limitations are explicit;
-13. procedure/evidence is reproducible from repository-controlled source/tools.
+2. physical constraint chains are defined for claimed autonomous/repeatable DOFs;
+3. manual setup variables explicitly identify residual DOFs and external/operator constraints;
+4. all endpoints are checked;
+5. complete affected ranges are swept with justified resolution;
+6. critical coupled combinations are checked;
+7. no forbidden solid intersection exists at the chosen proof level;
+8. required clearances remain valid;
+9. internal same-transform body pairs were not omitted;
+10. flexible elements remain valid if present;
+11. hard stops/retention are understood;
+12. support/guide coherence remains valid throughout claimed operational motion;
+13. proof limitations are explicit;
+14. procedure/evidence is reproducible from repository-controlled source/tools.
 
 ## 12. Failure/backtracking
 
@@ -158,6 +166,6 @@ Record the failing state ID/configuration, identify the owning interface/constra
 
 ## 13. Invalidation
 
-Any change to a solid envelope, support/constraint chain, axis/path, range, neighboring clearance, payload envelope, fastener envelope, cable path, retention/end-stop or assembly/service state invalidates the relevant motion checkpoint.
+Any change to a solid envelope, support/constraint chain, axis/path, range, neighboring clearance, payload envelope, fastener envelope, cable path, retention/end-stop, manual/external constraint assumption or assembly/service state invalidates the relevant motion checkpoint.
 
 For simple rigid variables, Level A + Level B provide a strong baseline. For complex/coupled state spaces, add Level C rather than reducing coverage.
